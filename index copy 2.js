@@ -1,0 +1,269 @@
+const nouns = {
+    "+Animate, +Masculine": ["bino-nu", "simu-nu", "moru-nu", "hasi-nu", "kina-nu", "jufa-nu", "ravi-nu", "lona-nu"],
+    "+Animate, -Masculine": ["wara-ni", "tulu-ni", "piro-ni", "wetu-ni", "fone-ni", "heku-ni", "kura-ni", "gela-ni"],
+    "-Animate, +Masculine": ["kapa-nu", "noko-nu", "tiwi-nu", "wako-nu", "ramu-nu", "sazo-nu", "tivu-nu", "mabu-nu"],
+    "-Animate, -Masculine": ["kena-ni", "sino-ni", "volu-ni", "popo-ni", "julo-ni", "tivo-ni", "hoso-ni", "boxo-ni"]
+  };
+
+  const determiners = {
+    "+Masculine": "ne",
+    "-Masculine": "ni"
+  };
+
+  const pronouns = {
+    "+Masculine": "kunu",
+    "-Masculine": "kuni",
+    "+Animate": "kuma",
+    "-Animate": "ku"
+  };
+
+  const verbs = ["bouncing", "jiggling", "disappearing", "appearing", "spinning"];
+
+  // Mapping of nouns to their corresponding image file.
+  const imagePaths = {
+    "bino-nu": "images/man.png",
+    "simu-nu": "images/cat.png",
+    "moru-nu": "images/cow.png",
+    "hasi-nu": "images/bird.png",
+    "kina-nu": "images/monkey.png",
+    "jufa-nu": "images/frog.png",
+    "ravi-nu": "images/polar_bear.png",
+    "lona-nu": "images/seal.png",
+    "wara-ni": "images/woman.png",
+    "tulu-ni": "images/dog.png",
+    "piro-ni": "images/horse.png",
+    "wetu-ni": "images/fish.png",
+    "fone-ni": "images/penguin.png",
+    "heku-ni": "images/lizard.png",
+    "kura-ni": "images/elephant.png",
+    "gela-ni": "images/chicken.png",
+    "kapa-nu": "images/pen.png",
+    "noko-nu": "images/book.png",
+    "tiwi-nu": "images/apple.png",
+    "wako-nu": "images/table.png",
+    "ramu-nu": "images/phone.png",
+    "sazo-nu": "images/scissors.png",
+    "tivu-nu": "images/coat.png",
+    "mabu-nu": "images/car.png",
+    "kena-ni": "images/keys.png",
+    "sino-ni": "images/chair.png",
+    "volu-ni": "images/paper_towel.png",
+    "popo-ni": "images/rock.png",
+    "julo-ni": "images/purse.png",
+    "tivo-ni": "images/tv.png",
+    "hoso-ni": "images/house.png",
+    "boxo-ni": "images/box.png"
+  };
+
+  let responses = [];
+
+  // Generates the verb image path dynamically.
+  // For example, if noun image is "images/bird.png" and verb is "disappearing",
+  // then returns "images/disappearing_bird.gif"
+  function generateVerbImage(noun, verb) {
+    let nounImage = imagePaths[noun] || "images/default.png";
+    let parts = nounImage.split('/');
+    let filename = parts[parts.length - 1]; // e.g., "bird.png"
+    let baseName = filename.split('.')[0];  // e.g., "bird"
+    return `images/${verb}_${baseName}.gif`;
+  }
+
+  // Helper function to select a random element from an array.
+  function getRandomElement(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  // Generates a sentence with correct agreement (used for training).
+  function generateCorrectSentence(nounClass) {
+    let noun = getRandomElement(nouns[nounClass]);
+    // Determine correct gender based on noun marker ("-nu" indicates masculine)
+    let correctGender = noun.includes("-nu") ? "+Masculine" : "-Masculine";
+    let determiner = (correctGender === "+Masculine") ? determiners["+Masculine"] : determiners["-Masculine"];
+    let pronoun = (correctGender === "+Masculine") ? pronouns["+Masculine"] : pronouns["-Masculine"];
+    let verb = getRandomElement(verbs);
+    let sentence = `Look! ${determiner} ${noun}. ${pronoun} is ${verb}.`;
+    let verbImage = generateVerbImage(noun, verb);
+    return { text: sentence, noun, verb, pronoun, imagePath: imagePaths[noun] || "images/default.png", verbImage, autoEvaluation: "Good" };
+  }
+
+  // Generates a sentence for the experiment.
+  // Randomly uses aligned (correct) or flipped (misaligned) agreement.
+  // The hidden autoEvaluation ("Good" if aligned, "Bad" if misaligned) is stored.
+  function generateSentence(nounClass) {
+    let noun = getRandomElement(nouns[nounClass]);
+    let correctGender = noun.includes("-nu") ? "+Masculine" : "-Masculine";
+    let isAligned = Math.random() > 0.5;
+    let determiner, pronoun;
+    if (isAligned) {
+      determiner = (correctGender === "+Masculine") ? determiners["+Masculine"] : determiners["-Masculine"];
+      pronoun = (correctGender === "+Masculine") ? pronouns["+Masculine"] : pronouns["-Masculine"];
+    } else {
+      determiner = (correctGender === "+Masculine") ? determiners["-Masculine"] : determiners["+Masculine"];
+      pronoun = (correctGender === "+Masculine") ? pronouns["-Masculine"] : pronouns["+Masculine"];
+    }
+    let verb = getRandomElement(verbs);
+    let sentence = `Look! ${determiner} ${noun}. ${pronoun} is ${verb}.`;
+    let verbImage = generateVerbImage(noun, verb);
+    let autoEvaluation = isAligned ? "Good" : "Bad";
+    return { text: sentence, noun, verb, pronoun, imagePath: imagePaths[noun] || "images/default.png", verbImage, autoEvaluation };
+  }
+
+  // Generates training stimuli using correct sentences.
+  function runTrainingPhase() {
+    let trainingStimuli = [];
+    let categories = Object.keys(nouns);
+    let numberOfTraining = 16; // Adjust number of training examples as needed.
+    for (let i = 0; i < numberOfTraining; i++) {
+      let randomCategory = getRandomElement(categories);
+      trainingStimuli.push(generateCorrectSentence(randomCategory));
+    }
+    return trainingStimuli;
+  }
+
+  // Generates experiment stimuli.
+  function runExperiment() {
+    let testPhases = [];
+    let categories = Object.keys(nouns);
+    let numberOfTests = 16; // Adjust number of experiment tests as needed.
+    for (let i = 0; i < numberOfTests; i++) {
+      let randomCategory = getRandomElement(categories);
+      testPhases.push(generateSentence(randomCategory));
+    }
+    return testPhases;
+  }
+
+  // Displays the training phase.
+  function displayTrainingPhase() {
+    const container = document.getElementById("training-container");
+    container.innerHTML = "<h2>Training Phase</h2>";
+    let trainingResults = runTrainingPhase();
+    trainingResults.forEach(function(stimulus, index) {
+      let stimulusDiv = document.createElement("div");
+
+      // Display the training sentence.
+      let p = document.createElement("p");
+      p.innerText = `Training ${index + 1}: ${stimulus.text}`;
+      stimulusDiv.appendChild(p);
+
+      // Display the noun image.
+      let nounImg = document.createElement("img");
+      nounImg.src = stimulus.imagePath;
+      nounImg.alt = stimulus.noun;
+      nounImg.style.width = "150px";
+      nounImg.style.height = "150px";
+      stimulusDiv.appendChild(nounImg);
+
+      // Display the verb image.
+      let verbImg = document.createElement("img");
+      verbImg.src = stimulus.verbImage;
+      verbImg.alt = stimulus.verb;
+      verbImg.style.width = "150px";
+      verbImg.style.height = "150px";
+      stimulusDiv.appendChild(verbImg);
+
+      let hr = document.createElement("hr");
+      stimulusDiv.appendChild(hr);
+      container.appendChild(stimulusDiv);
+    });
+
+    // Button to proceed to the experiment phase.
+    let nextButton = document.createElement("button");
+    nextButton.innerText = "Proceed to Experiment";
+    nextButton.onclick = function() {
+      // Hide training container and show experiment
+      container.style.display = "none";
+      displayExperiment();
+    };
+    container.appendChild(nextButton);
+  }
+
+  // Displays the experiment phase.
+  function displayExperiment() {
+    const container = document.getElementById("experiment-container");
+    container.innerHTML = "<h2>Experiment Phase</h2>";
+    let results = runExperiment();
+    results.forEach(function(stimulus) {
+      let stimulusDiv = document.createElement("div");
+
+      // Display the generated sentence.
+      let p = document.createElement("p");
+      p.innerText = stimulus.text;
+      stimulusDiv.appendChild(p);
+
+      // Display the noun image.
+      let nounImg = document.createElement("img");
+      nounImg.src = stimulus.imagePath;
+      nounImg.alt = stimulus.noun;
+      nounImg.style.width = "150px";
+      nounImg.style.height = "150px";
+      stimulusDiv.appendChild(nounImg);
+
+      // Display the verb image.
+      let verbImg = document.createElement("img");
+      verbImg.src = stimulus.verbImage;
+      verbImg.alt = stimulus.verb;
+      verbImg.style.width = "150px";
+      verbImg.style.height = "150px";
+      stimulusDiv.appendChild(verbImg);
+
+      // "Good" button for user response.
+      let goodButton = document.createElement("button");
+      goodButton.innerText = "Good";
+      goodButton.onclick = function() {
+        let userResponse = "Good";
+        responses.push({
+          stimulus: stimulus.text,
+          autoEvaluation: stimulus.autoEvaluation,  // hidden marker
+          userResponse: userResponse,
+          isCorrect: (userResponse === stimulus.autoEvaluation),
+          timestamp: new Date().toISOString()
+        });
+        alert("Response recorded.");
+      };
+      stimulusDiv.appendChild(goodButton);
+
+      // "Bad" button for user response.
+      let badButton = document.createElement("button");
+      badButton.innerText = "Bad";
+      badButton.onclick = function() {
+        let userResponse = "Bad";
+        responses.push({
+          stimulus: stimulus.text,
+          autoEvaluation: stimulus.autoEvaluation,  // hidden marker
+          userResponse: userResponse,
+          isCorrect: (userResponse === stimulus.autoEvaluation),
+          timestamp: new Date().toISOString()
+        });
+        alert("Response recorded.");
+      };
+      stimulusDiv.appendChild(badButton);
+
+      let hr = document.createElement("hr");
+      stimulusDiv.appendChild(hr);
+      container.appendChild(stimulusDiv);
+    });
+
+    // Button to save responses as a JSON file.
+    let saveButton = document.createElement("button");
+    saveButton.innerText = "Save Responses";
+    saveButton.onclick = function() {
+      let blob = new Blob([JSON.stringify(responses, null, 2)], { type: "application/json" });
+      let link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "experiment_responses.json";
+      link.click();
+    };
+    container.appendChild(saveButton);
+  }
+
+  // Setup the experiment on page load.
+  document.addEventListener("DOMContentLoaded", function() {
+    let startButton = document.createElement("button");
+    startButton.innerText = "Start Training Phase";
+    startButton.onclick = displayTrainingPhase;
+    document.body.appendChild(startButton);
+  });
+
+
+// Run the experiment when the page loads.
+window.onload = displayExperiment;
